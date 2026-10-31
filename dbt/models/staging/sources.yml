@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Parquet written by the ingestion layer (see CLAUDE.md for the contracts).
+    meta:
+      external_location: "{{ env_var('TW_DATA_DIR', '../data') }}/raw/{name}/*/*/data.parquet"
+    tables:
+      - name: ibb
+        description: İBB hourly public transport, original grain, one partition per source month.
+      - name: weather
+        description: Open-Meteo hourly weather for Istanbul, local time.

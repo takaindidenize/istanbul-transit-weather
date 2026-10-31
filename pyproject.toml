@@ -1,0 +1,42 @@
+[project]
+name = "transit-weather"
+version = "0.1.0"
+description = "Istanbul public transport ridership x weather data pipeline"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "duckdb>=1.1",
+    "pyarrow>=17",
+    "pandas>=2.2",
+    "httpx>=0.27",
+    "tenacity>=9",
+    "dbt-duckdb>=1.9",
+    "dagster>=1.9",
+    "dagster-webserver>=1.9",
+    "dagster-dbt>=0.25",
+    "streamlit>=1.40",
+    "plotly>=5.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.7", "respx>=0.21"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.dagster]
+module_name = "transit_weather.definitions"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

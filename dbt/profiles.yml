@@ -1,0 +1,7 @@
+transit_weather:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('TW_DATA_DIR', '../data') }}/warehouse.duckdb"
+      threads: 4
