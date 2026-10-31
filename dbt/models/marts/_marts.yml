@@ -1,0 +1,180 @@
+version: 2
+
+# These three marts are the contract the dashboard codes against (see "Mart contracts" in
+# CLAUDE.md). Column names and types are enforced by dbt model contracts: changing them is a
+# breaking change for dashboard/ and must be coordinated.
+
+models:
+  - name: fct_hourly_ridership_weather
+    description: Ridership per hour × transport_mode joined with that hour's weather and calendar flags.
+    config:
+      contract:
+        enforced: true
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [observed_at, transport_mode]
+    columns:
+      - name: observed_at
+        description: Start of the hour, Europe/Istanbul local time.
+        data_type: timestamp
+        data_tests: [not_null]
+      - name: date
+        data_type: date
+        data_tests: [not_null]
+      - name: hour
+        description: 0–23.
+        data_type: integer
+        data_tests: [not_null]
+      - name: day_of_week
+        description: ISO day of week, 1 = Monday … 7 = Sunday.
+        data_type: integer
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7]
+                quote: false
+      - name: is_weekend
+        description: Saturday or Sunday.
+        data_type: boolean
+        data_tests: [not_null]
+      - name: is_holiday
+        description: Public holiday in effect at this hour (half-day holidays from 13:00).
+        data_type: boolean
+        data_tests: [not_null]
+      - name: transport_mode
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [road, rail, sea]
+      - name: passages
+        description: Card taps (validations) in the hour.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: passengers
+        description: Passengers in the hour.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: temperature_2m
+        description: °C.
+        data_type: double
+      - name: precipitation
+        description: mm over the hour (rain + snow water equivalent).
+        data_type: double
+      - name: snowfall
+        description: cm over the hour.
+        data_type: double
+      - name: wind_speed_10m
+        description: km/h.
+        data_type: double
+      - name: is_rainy
+        description: precipitation >= 0.1 mm.
+        data_type: boolean
+      - name: temp_band
+        description: Temperature band, lower bound inclusive.
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['<5', '5-15', '15-25', '>=25']
+
+  - name: agg_daily_ridership_weather
+    description: Daily ridership per transport_mode with daily weather summaries.
+    config:
+      contract:
+        enforced: true
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [date, transport_mode]
+    columns:
+      - name: date
+        data_type: date
+        data_tests: [not_null]
+      - name: day_of_week
+        description: ISO day of week, 1 = Monday … 7 = Sunday.
+        data_type: integer
+        data_tests: [not_null]
+      - name: is_weekend
+        data_type: boolean
+        data_tests: [not_null]
+      - name: is_holiday
+        description: Full-day public holiday (half days such as feast eves are false).
+        data_type: boolean
+        data_tests: [not_null]
+      - name: transport_mode
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [road, rail, sea]
+      - name: passages
+        data_type: bigint
+        data_tests: [not_null]
+      - name: passengers
+        data_type: bigint
+        data_tests: [not_null]
+      - name: avg_temperature
+        description: Mean of the day's hourly temperature_2m, °C.
+        data_type: double
+      - name: total_precipitation
+        description: Sum of the day's hourly precipitation, mm.
+        data_type: double
+      - name: rainy_hours
+        description: Hours of the day with precipitation >= 0.1 mm.
+        data_type: integer
+
+  - name: mart_weather_effect
+    description: >
+      How weather shifts demand: average hourly passages per transport_mode × hour × day_type ×
+      condition, indexed against dry hours with the same transport_mode, hour and day_type.
+    config:
+      contract:
+        enforced: true
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [transport_mode, hour, day_type, condition]
+    columns:
+      - name: transport_mode
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [road, rail, sea]
+      - name: hour
+        data_type: integer
+        data_tests: [not_null]
+      - name: day_type
+        description: "'weekend_or_holiday' when is_weekend or is_holiday, else 'weekday'."
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [weekday, weekend_or_holiday]
+      - name: condition
+        description: "'snow' if snowfall > 0, else 'rain' if is_rainy, else 'dry'."
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [dry, rain, snow]
+      - name: avg_passages
+        data_type: double
+        data_tests: [not_null]
+      - name: n_hours
+        description: Number of hourly observations behind avg_passages.
+        data_type: integer
+        data_tests: [not_null]
+      - name: index_vs_dry
+        description: >
+          avg_passages / avg_passages of the dry row with the same transport_mode, hour and
+          day_type. 1.0 for dry rows; null when there is no dry baseline.
+        data_type: double

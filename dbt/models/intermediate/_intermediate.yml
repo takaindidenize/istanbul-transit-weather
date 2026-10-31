@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: int_ridership_hourly
+    description: Ridership summed to hour × transport_mode.
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [observed_at, transport_mode]
+    columns:
+      - name: observed_at
+        data_tests: [not_null]
+      - name: transport_mode
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [road, rail, sea]
+      - name: passages
+        data_tests: [not_null]
+      - name: passengers
+        data_tests: [not_null]

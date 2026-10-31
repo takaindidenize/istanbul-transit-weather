@@ -6,6 +6,10 @@ profile: transit_weather
 model-paths: ["models"]
 seed-paths: ["seeds"]
 test-paths: ["tests"]
+clean-targets: ["target", "logs"]
+
+flags:
+  send_anonymous_usage_stats: false
 
 models:
   transit_weather:
@@ -15,3 +19,11 @@ models:
       +materialized: view
     marts:
       +materialized: table
+
+seeds:
+  transit_weather:
+    turkish_public_holidays:
+      +column_types:
+        date: date
+        name: varchar
+        is_half_day: boolean
