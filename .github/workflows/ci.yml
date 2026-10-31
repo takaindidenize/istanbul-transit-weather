@@ -5,14 +5,68 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  DBT_SEND_ANONYMOUS_USAGE_STATS: "false"
+
 jobs:
   test:
+    name: Lint and test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
       - run: pip install -e ".[dev]"
-      - run: ruff check . && ruff format --check .
-      - run: pytest
+      - name: Ruff
+        run: ruff check . && ruff format --check .
+      - name: Pytest
+        run: pytest
+      - name: Dagster definitions load
+        run: dagster definitions validate -m transit_weather.definitions
+
+  dbt:
+    name: dbt build on fixture data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Job-level `if` cannot see the repository, so each step checks for the fixture script
+      # (added by the dbt models PR). Until it exists the job is a successful no-op.
+      - name: Check for fixture script
+        if: hashFiles('dbt/scripts/make_fixture_data.py') == ''
+        run: echo "::notice::dbt/scripts/make_fixture_data.py not found; skipping dbt build."
+      - uses: actions/setup-python@v5
+        if: hashFiles('dbt/scripts/make_fixture_data.py') != ''
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install
+        if: hashFiles('dbt/scripts/make_fixture_data.py') != ''
+        run: |
+          pip install -e ".[dev]"
+          echo "TW_DATA_DIR=${RUNNER_TEMP}/tw-data" >> "$GITHUB_ENV"
+      - name: Fixture data + dbt build
+        if: hashFiles('dbt/scripts/make_fixture_data.py') != ''
+        run: |
+          mkdir -p "$TW_DATA_DIR"
+          python dbt/scripts/make_fixture_data.py
+          dbt build --project-dir dbt --profiles-dir dbt
+      # With a manifest and a built warehouse in place, check the integration points: the dbt
+      # models load as Dagster assets downstream of the raw assets, and every dashboard query
+      # runs against the real marts.
+      - name: Dagster loads dbt assets
+        if: hashFiles('dbt/scripts/make_fixture_data.py') != ''
+        run: dagster definitions validate -m transit_weather.definitions
+      - name: Dashboard and orchestration tests against the built warehouse
+        if: hashFiles('dbt/scripts/make_fixture_data.py') != ''
+        env:
+          TW_REQUIRE_BUILT: "1"  # turn "nothing built yet" skips into failures
+        run: pytest tests/test_dashboard.py tests/test_definitions.py -rs
