@@ -237,6 +237,16 @@ def _fmt_int(value: float | int | None) -> str:
     return "–" if value is None or pd.isna(value) else f"{value:,.0f}"
 
 
+def _fmt_compact(value: float | int | None) -> str:
+    """3,800,320,134 -> '3.80B', so large totals fit in a metric tile."""
+    if value is None or pd.isna(value):
+        return "–"
+    for threshold, suffix in ((1e9, "B"), (1e6, "M")):
+        if abs(value) >= threshold:
+            return f"{value / threshold:.2f}{suffix}"
+    return _fmt_int(value)
+
+
 def sidebar(first, last, modes: list[str]) -> Filters | None:
     st.sidebar.header("Filters")
     chosen_modes = st.sidebar.multiselect(
@@ -292,8 +302,8 @@ def main() -> None:
     # Headline KPIs ---------------------------------------------------------------------------
     k = run("kpis", filters)
     cols = st.columns(4)
-    cols[0].metric("Passengers", _fmt_int(k["total_passengers"]))
-    cols[1].metric("Avg passengers / day", _fmt_int(k["avg_daily_passengers"]))
+    cols[0].metric("Passengers", _fmt_compact(k["total_passengers"]))
+    cols[1].metric("Avg passengers / day", _fmt_compact(k["avg_daily_passengers"]))
     cols[2].metric(
         f"Wet days (≥ {queries.WET_DAY_MM:g} mm)",
         f"{_fmt_int(k['wet_days'])} / {_fmt_int(k['n_days'])}",
