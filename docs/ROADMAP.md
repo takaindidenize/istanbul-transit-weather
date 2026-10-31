@@ -1,18 +1,23 @@
 # Roadmap
 
-## Phase 1 — parallel build (one branch / PR each)
-- [ ] **İBB ingestion** — list monthly resources from the CKAN API
-      (`package_show?id=hourly-public-transport-data-set`), download/stream each CSV, normalise schema
-      drift, write the raw Parquet contract, skip empty months, CLI entry point.
-- [ ] **Weather ingestion** — fetch hourly history for Istanbul from the Open-Meteo archive API
-      per month, write the raw Parquet contract, retry/backoff, CLI entry point.
-- [ ] **dbt models** — staging, intermediate and marts (hourly ridership × weather, daily summary,
-      rain/temperature effect by transport mode), schema + data tests, fixture seeds so
-      `dbt build` runs in CI without real data.
-- [ ] **Orchestration, dashboard, CI** — Dagster assets with monthly partitions wrapping ingestion
-      and dbt, asset checks, Streamlit dashboard over the marts, GitHub Actions workflow.
+## Phase 1 — build ✅
+- [x] **İBB ingestion**: CKAN resource listing, streamed download, DuckDB → Parquet, schema
+      normalisation, empty-month and month-name handling.
+- [x] **Weather ingestion**: Open-Meteo archive per month, retries, completeness checks.
+- [x] **dbt models**: staging, intermediate and marts, holiday seed, contracts, data tests,
+      fixture generator for CI.
+- [x] **Orchestration, dashboard, CI**: Dagster partitions, asset checks and schedule; Streamlit
+      dashboard; GitHub Actions.
 
-## Phase 2 — integration
-- [ ] Run end to end on 12 months of real data, fix integration issues.
-- [ ] Analysis write-up in the README with charts and findings.
-- [ ] Data quality notes (`docs/DATA_NOTES.md`): schema drift, empty months, outliers.
+## Phase 2 — integration ✅
+- [x] End-to-end run on real data: 2023-01 to 2024-07 (310M rows); dbt build and Dagster runs pass.
+- [x] Fixed-effects analysis with clustered standard errors (`analysis/weather_effect.py`) and
+      findings in the README.
+- [x] Data quality notes (`docs/DATA_NOTES.md`): empty and incomplete months, mislabelled file.
+
+## Ideas for later
+- [ ] Line- or district-level effects (which lines lose the most riders in rain?), using the
+      station and town columns already in the raw data.
+- [ ] Several weather points (European and Asian side) instead of one city-centre grid point.
+- [ ] Forecast next-day ridership from the weather forecast, evaluated against a seasonal baseline.
+- [ ] Extend to 2020–2022 to compare pandemic-era behaviour.
