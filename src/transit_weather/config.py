@@ -11,9 +11,11 @@ WEATHER_RAW_DIR = RAW_DIR / "weather"
 WAREHOUSE_PATH = DATA_DIR / "warehouse.duckdb"
 DBT_PROJECT_DIR = PROJECT_ROOT / "dbt"
 
-# Inclusive month range to ingest, 'YYYY-MM'. Each İBB month is ~1 GB of CSV.
-START_MONTH = os.getenv("TW_START_MONTH", "2024-01")
-END_MONTH = os.getenv("TW_END_MONTH", "2024-12")
+# Inclusive month range to ingest, 'YYYY-MM'. Each İBB month is ~1 GB of CSV. The default is the
+# last complete stretch: İBB published Aug-Oct 2024 only partially and Nov-Dec 2024 empty
+# (see docs/DATA_NOTES.md).
+START_MONTH = os.getenv("TW_START_MONTH", "2023-01")
+END_MONTH = os.getenv("TW_END_MONTH", "2024-07")
 
 IBB_CKAN_URL = "https://data.ibb.gov.tr/api/3/action/package_show"
 IBB_DATASET_ID = "hourly-public-transport-data-set"
