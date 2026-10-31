@@ -22,13 +22,13 @@ MARTS = (
     "mart_weather_effect",
 )
 MODES = ("road", "rail", "sea")
-DAY_TYPES = ("weekday", "weekend")
+DAY_TYPES = ("weekday", "weekend_or_holiday")
 DRY_CONDITION = "dry"
 # A day counts as wet from 1 mm of total precipitation (the usual "rain day" threshold).
 WET_DAY_MM = 1.0
 
 # Day type of a row in the hourly/daily marts, matching mart_weather_effect.day_type.
-_DAY_TYPE_SQL = "CASE WHEN is_weekend THEN 'weekend' ELSE 'weekday' END"
+_DAY_TYPE_SQL = "CASE WHEN is_weekend OR is_holiday THEN 'weekend_or_holiday' ELSE 'weekday' END"
 
 
 @dataclass(frozen=True)

@@ -91,7 +91,8 @@ def con(tmp_path: Path):
             CREATE TABLE mart_weather_effect AS
             WITH base AS (
                 SELECT transport_mode, hour,
-                       CASE WHEN is_weekend THEN 'weekend' ELSE 'weekday' END AS day_type,
+                       CASE WHEN is_weekend OR is_holiday THEN 'weekend_or_holiday'
+                            ELSE 'weekday' END AS day_type,
                        CASE WHEN is_rainy THEN 'rain' ELSE 'dry' END AS condition,
                        avg(passages) AS avg_passages, count(*) AS n_hours
                 FROM fct_hourly_ridership_weather GROUP BY ALL
@@ -230,5 +231,5 @@ def test_app_renders_all_sections(monkeypatch, con, tmp_path):
     assert not at.exception
     assert [m.label for m in at.metric][:2] == ["Passengers", "Avg passengers / day"]
     assert len(at.subheader) == 4
-    at.sidebar.radio[0].set_value("Weekends").run()
+    at.sidebar.radio[0].set_value("Weekends & holidays").run()
     assert not at.exception

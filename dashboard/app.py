@@ -245,11 +245,11 @@ def sidebar(first, last, modes: list[str]) -> Filters | None:
     picked = st.sidebar.date_input(
         "Date range", value=(first, last), min_value=first, max_value=last
     )
-    day_choice = st.sidebar.radio("Days", ("All days", "Weekdays", "Weekends"))
+    day_choice = st.sidebar.radio("Days", ("All days", "Weekdays", "Weekends & holidays"))
     day_types = {
         "All days": queries.DAY_TYPES,
         "Weekdays": ("weekday",),
-        "Weekends": ("weekend",),
+        "Weekends & holidays": ("weekend_or_holiday",),
     }[day_choice]
     st.sidebar.caption(
         "The rain-effect and heatmap sections come from a mart aggregated over the whole "
