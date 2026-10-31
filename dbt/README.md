@@ -19,18 +19,19 @@ directory the same way:
 The data directory must exist before dbt runs. DuckDB creates the warehouse file but not its
 parent folder.
 
+> **Use an absolute `TW_DATA_DIR`.** The staging models are DuckDB views, and a view stores the
+> Parquet path exactly as it was rendered. With the relative fallback (`dbt/../data`) the views
+> only resolve from the directory dbt was run in, so a later run from elsewhere (Dagster runs dbt
+> from inside `dbt/`) fails with "No files found". Dagster sets an absolute `TW_DATA_DIR` itself;
+> when you call dbt directly, set it too. Re-run `dbt build` after moving the repository.
+
 ## Run
 
 From the repo root, after `pip install -e ".[dev]"`:
 
 ```bash
+export TW_DATA_DIR="$PWD/data"          # PowerShell: $env:TW_DATA_DIR = "$PWD\data"
 dbt build --project-dir dbt --profiles-dir dbt
-```
-
-or from inside `dbt/`:
-
-```bash
-dbt build
 ```
 
 ### Fixture data (CI, no network)

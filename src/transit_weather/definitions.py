@@ -20,6 +20,7 @@ This module must always import, even before the ingestion modules or the dbt mod
 
 import importlib
 import logging
+import os
 import shutil
 import sys
 from collections.abc import Callable, Iterator, Mapping
@@ -51,6 +52,11 @@ from dagster import (
 from transit_weather import config
 
 logger = logging.getLogger(__name__)
+
+# dbt resolves its data directory from TW_DATA_DIR, falling back to a path relative to its
+# profiles dir, which dagster-dbt passes in a form that breaks that fallback. Hand the dbt
+# subprocess the same absolute directory the ingestion assets write to.
+os.environ.setdefault("TW_DATA_DIR", str(config.DATA_DIR.resolve()))
 
 RAW_GROUP = "raw"
 ROW_COUNT_CHECK = "partition_row_count_positive"
@@ -342,7 +348,9 @@ def _build_dbt_assets(project_dir: Path) -> list[AssetsDefinition]:
         def transit_weather_dbt(
             context: AssetExecutionContext, dbt: DbtCliResource
         ) -> Iterator[Any]:
-            yield from dbt.cli(["build"], context=context).stream()
+            # No partial parsing: a cached parse from a plain `dbt build` keeps that run's
+            # source paths, which may be relative to a different working directory.
+            yield from dbt.cli(["build", "--no-partial-parse"], context=context).stream()
 
     except Exception:  # noqa: BLE001 - a broken dbt project must not take the UI down
         logger.exception("Could not load the dbt project at %s; dbt assets disabled.", project_dir)
