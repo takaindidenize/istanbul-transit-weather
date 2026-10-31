@@ -1,12 +1,31 @@
 version: 2
 
+# The data directory resolves exactly like the warehouse path in profiles.yml: TW_DATA_DIR if set,
+# otherwise <dir of profiles.yml>/../data. dbt-duckdb fills `{name}` with the table name.
 sources:
   - name: raw
     description: Parquet written by the ingestion layer (see CLAUDE.md for the contracts).
     meta:
-      external_location: "{{ env_var('TW_DATA_DIR', '../data') }}/raw/{name}/*/*/data.parquet"
+      external_location: >-
+        read_parquet('{{ env_var('TW_DATA_DIR', flags.PROFILES_DIR ~ '/../data') }}/raw/{name}/*/*/data.parquet',
+        union_by_name = true, hive_partitioning = false)
     tables:
       - name: ibb
         description: İBB hourly public transport, original grain, one partition per source month.
+        columns:
+          - name: transition_date
+            data_tests: [not_null]
+          - name: transition_hour
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+                    quote: false
+          - name: transport_type_id
+            data_tests: [not_null]
       - name: weather
-        description: Open-Meteo hourly weather for Istanbul, local time.
+        description: Open-Meteo hourly weather for Istanbul, Europe/Istanbul local time.
+        columns:
+          - name: observed_at
+            data_tests: [not_null, unique]

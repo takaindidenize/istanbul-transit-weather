@@ -1,7 +1,13 @@
+# Data directory resolution (see dbt/README.md):
+#   1. TW_DATA_DIR, if set (absolute, or relative to the current working directory).
+#   2. Otherwise <directory of this profiles.yml>/../data, i.e. <repo>/data. flags.PROFILES_DIR is
+#      the directory dbt loaded this file from, so the default works both from the repo root
+#      (`dbt build --project-dir dbt --profiles-dir dbt`) and from inside dbt/ (`dbt build`).
+# The same expression is used in models/staging/sources.yml; keep them in sync.
 transit_weather:
   target: dev
   outputs:
     dev:
       type: duckdb
-      path: "{{ env_var('TW_DATA_DIR', '../data') }}/warehouse.duckdb"
+      path: "{{ env_var('TW_DATA_DIR', flags.PROFILES_DIR ~ '/../data') }}/warehouse.duckdb"
       threads: 4

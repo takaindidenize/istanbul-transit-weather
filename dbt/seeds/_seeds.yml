@@ -1,0 +1,16 @@
+version: 2
+
+seeds:
+  - name: turkish_public_holidays
+    description: >
+      Official public holidays in Türkiye, 2020–2024, including Ramadan Feast (Ramazan Bayramı) and
+      Feast of Sacrifice (Kurban Bayramı). Eves of the religious feasts and Republic Day Eve are
+      half days (holiday from 13:00). Days where two holidays coincide are one row with both names.
+    columns:
+      - name: date
+        data_tests: [not_null, unique]
+      - name: name
+        data_tests: [not_null]
+      - name: is_half_day
+        description: True when only the afternoon (from 13:00) is a holiday.
+        data_tests: [not_null]

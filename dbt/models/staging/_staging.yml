@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: stg_ibb__hourly_transport
+    description: >
+      İBB hourly public transport at the original source grain (hour × line × station × fare type ...),
+      typed, strings trimmed (empty strings become null), with `observed_at` and a transport mode label.
+    columns:
+      - name: observed_at
+        description: Start of the hour, local time (transition_date + transition_hour).
+        data_tests: [not_null]
+      - name: transport_type_id
+        description: Source mode id (1 = road, 2 = rail, 3 = sea).
+      - name: transport_mode
+        description: >
+          Label derived from transport_type_id; null for unknown ids. Unknown ids only warn here and
+          are dropped in int_ridership_hourly.
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+          - accepted_values:
+              arguments:
+                values: [road, rail, sea]
+      - name: passages
+        description: number_of_passage — card taps (validations).
+      - name: passengers
+        description: number_of_passenger — distinct passengers.
+
+  - name: stg_weather__hourly
+    description: Hourly Istanbul weather, typed.
+    columns:
+      - name: observed_at
+        description: Start of the hour, local time.
+        data_tests: [not_null, unique]
+      - name: temperature_2m
+        description: Air temperature at 2 m, °C.
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: precipitation
+        description: Total precipitation (rain + snow water equivalent) over the preceding hour, mm.
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: snowfall
+        description: Snowfall over the preceding hour, cm.
