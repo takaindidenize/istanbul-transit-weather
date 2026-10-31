@@ -57,8 +57,12 @@ def test_list_months_trusts_name_over_filename(caplog):
             json={
                 "result": {
                     "resources": [
-                        resource("Kasım 2024 Toplu Ulaşım Verisi", "hourly_transportation_202411.csv"),
-                        resource("Aralık 2024 Toplu Ulaşım Verisi", "hourly_transportation_202512.csv"),
+                        resource(
+                            "Kasım 2024 Toplu Ulaşım Verisi", "hourly_transportation_202411.csv"
+                        ),
+                        resource(
+                            "Aralık 2024 Toplu Ulaşım Verisi", "hourly_transportation_202512.csv"
+                        ),
                         resource("Veri sözlüğü", "dictionary.pdf"),
                     ]
                 }

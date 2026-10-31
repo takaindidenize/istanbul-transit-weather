@@ -20,6 +20,8 @@ This module must always import, even before the ingestion modules or the dbt mod
 
 import importlib
 import logging
+import shutil
+import sys
 from collections.abc import Callable, Iterator, Mapping
 from datetime import date, datetime
 from pathlib import Path
@@ -349,12 +351,28 @@ def _build_dbt_assets(project_dir: Path) -> list[AssetsDefinition]:
     return [transit_weather_dbt]
 
 
+def dbt_executable() -> str:
+    """The dbt installed next to this interpreter, so an inactive virtualenv still works."""
+    scripts_dir = Path(sys.executable).parent
+    for name in ("dbt.exe", "dbt"):
+        candidate = scripts_dir / name
+        if candidate.exists():
+            return str(candidate)
+    return shutil.which("dbt") or "dbt"
+
+
 def _dbt_resources(project_dir: Path) -> dict[str, Any]:
     try:
         from dagster_dbt import DbtCliResource
     except ImportError:  # pragma: no cover
         return {}
-    return {"dbt": DbtCliResource(project_dir=str(project_dir), profiles_dir=str(project_dir))}
+    return {
+        "dbt": DbtCliResource(
+            project_dir=str(project_dir),
+            profiles_dir=str(project_dir),
+            dbt_executable=dbt_executable(),
+        )
+    }
 
 
 dbt_model_assets = _build_dbt_assets(config.DBT_PROJECT_DIR)

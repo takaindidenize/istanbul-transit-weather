@@ -11,3 +11,4 @@ dbt/logs/
 dbt/dbt_packages/
 .dagster/
 tmp*/
+.tmp_dagster_home*/
